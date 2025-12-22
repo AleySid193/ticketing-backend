@@ -9,9 +9,6 @@ logs/
 *.log
 npm-debug.log*
 
-# SQLite database file
-src/db/todo.db
-
 # OS-specific files
 .DS_Store
 Thumbs.db
