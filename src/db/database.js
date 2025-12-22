@@ -1,18 +1,22 @@
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
+require('dotenv').config();
 
-const db = new sqlite3.Database(
-  path.join(__dirname, 'todo.db'),
-  (err) => {
-    if (err) console.error(err);
-    else console.log('SQLite connected');
+const dbPath = path.resolve(process.env.DB_STORAGE);
+
+const db = new sqlite3.Database(dbPath, (err) => {
+  if (err) {
+    console.error('Database connection error:', err.message);
+  } else {
+    console.log(`SQLite connected at: ${dbPath}`);
   }
-);
+});
 
 db.serialize(() => {
-  /* =========================
-     USERS
-  ========================= */
+  // Enable foreign keys
+  db.run('PRAGMA foreign_keys = ON;');
+
+  // USERS table
   db.run(`
     CREATE TABLE IF NOT EXISTS users (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -23,9 +27,7 @@ db.serialize(() => {
     )
   `);
 
-  /* =========================
-     ROLES
-  ========================= */
+  // ROLES table
   db.run(`
     CREATE TABLE IF NOT EXISTS roles (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -33,9 +35,7 @@ db.serialize(() => {
     )
   `);
 
-  /* =========================
-     USER ↔ ROLE (MANY-TO-MANY)
-  ========================= */
+  // USER ↔ ROLE (MANY-TO-MANY)
   db.run(`
     CREATE TABLE IF NOT EXISTS user_roles (
       user_id INTEGER NOT NULL,
@@ -46,9 +46,7 @@ db.serialize(() => {
     )
   `);
 
-  /* =========================
-     TASKS
-  ========================= */
+  // TASKS table
   db.run(`
     CREATE TABLE IF NOT EXISTS tasks (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -56,11 +54,7 @@ db.serialize(() => {
       description TEXT,
       priority TEXT CHECK(priority IN ('low','medium','high')) NOT NULL,
       status TEXT CHECK(status IN (
-        'assigned',
-        'submitted',
-        'approved',
-        'rejected',
-        'completed'
+        'assigned', 'submitted', 'approved', 'rejected', 'completed'
       )) NOT NULL,
       assigned_to INTEGER,
       created_by INTEGER NOT NULL,
@@ -72,9 +66,7 @@ db.serialize(() => {
     )
   `);
 
-  /* =========================
-     SEED ROLES (IDEMPOTENT)
-  ========================= */
+  // Seed roles
   db.run(`INSERT OR IGNORE INTO roles (name) VALUES ('admin')`);
   db.run(`INSERT OR IGNORE INTO roles (name) VALUES ('manager')`);
   db.run(`INSERT OR IGNORE INTO roles (name) VALUES ('user')`);
