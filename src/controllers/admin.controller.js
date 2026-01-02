@@ -24,3 +24,45 @@ exports.assignRole = (req, res) => {
     }
   );
 };
+
+
+exports.getDashboardStats = (req, res) => {
+  const stats = {};
+
+  // Total users
+  db.get(`SELECT COUNT(*) AS total FROM users`, (err, row) => {
+    if (err) return res.status(500).json({ error: err.message });
+    stats.totalUsers = row.total;
+
+    // Managers count
+    db.get(
+      `
+      SELECT COUNT(*) AS total
+      FROM user_roles ur
+      JOIN roles r ON ur.role_id = r.id
+      WHERE r.name = 'manager'
+      `,
+      (err, row) => {
+        if (err) return res.status(500).json({ error: err.message });
+        stats.managers = row.total;
+
+        // Resources (users)
+        db.get(
+          `
+          SELECT COUNT(*) AS total
+          FROM user_roles ur
+          JOIN roles r ON ur.role_id = r.id
+          WHERE r.name = 'user'
+          `,
+          (err, row) => {
+            if (err) return res.status(500).json({ error: err.message });
+            stats.resources = row.total;
+
+            return res.json(stats);
+          }
+        );
+      }
+    );
+  });
+};
+
