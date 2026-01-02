@@ -66,3 +66,25 @@ exports.getDashboardStats = (req, res) => {
   });
 };
 
+exports.getDashboardChart = (req, res) => {
+  const query = `
+    SELECT 
+      SUM(CASE WHEN status = 'assigned' AND is_deleted = 0 THEN 1 ELSE 0 END) AS assigned,
+      SUM(CASE WHEN status = 'submitted' AND is_deleted = 0 THEN 1 ELSE 0 END) AS submitted,
+      SUM(CASE WHEN status = 'approved' AND is_deleted = 0 THEN 1 ELSE 0 END) AS approved,
+      SUM(CASE WHEN status = 'rejected' AND is_deleted = 0 THEN 1 ELSE 0 END) AS rejected,
+      SUM(CASE WHEN status = 'completed' AND is_deleted = 0 THEN 1 ELSE 0 END) AS completed,
+      SUM(CASE WHEN is_deleted = 1 THEN 1 ELSE 0 END) AS deleted
+    FROM tasks
+  `;
+
+  db.get(query, [], (err, row) => {
+    if (err) {
+      console.error('Dashboard chart query error:', err);
+      return res.status(500).json({ error: 'Failed to fetch dashboard chart data' });
+    }
+
+    res.json(row);
+  });
+};
+
