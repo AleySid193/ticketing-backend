@@ -88,3 +88,70 @@ exports.getDashboardChart = (req, res) => {
   });
 };
 
+
+exports.getPendingResources = (req, res) => {
+  const query = `
+    SELECT u.id, u.name, u.email
+    FROM users u
+    LEFT JOIN user_roles ur ON u.id = ur.user_id
+    WHERE ur.user_id IS NULL
+  `;
+
+  db.all(query, [], (err, rows) => {
+    if (err) {
+      console.error('Error fetching pending resources:', err);
+      return res.status(500).json({ error: 'Failed to fetch pending resources' });
+    }
+
+    res.json(rows);
+  });
+};
+
+
+exports.updateResourceStatus = (req, res) => {
+  const updates = req.body; // [{id: 1, status: 'manager'}, {id: 2, status: 'reject'}]
+
+  if (!Array.isArray(updates)) {
+    return res.status(400).json({ error: 'Invalid payload format' });
+  }
+
+  const getRoleId = (roleName, callback) => {
+    if (roleName === 'reject') return callback(null, null); // no role for reject
+    db.get('SELECT id FROM roles WHERE name = ?', [roleName], (err, row) => {
+      if (err) return callback(err);
+      if (!row) return callback(new Error(`Invalid role: ${roleName}`));
+      callback(null, row.id);
+    });
+  };
+
+  const tasks = updates.map(update => new Promise((resolve, reject) => {
+    getRoleId(update.status, (err, roleId) => {
+      if (err) return reject(err);
+
+      if (update.status === 'reject') {
+        // DELETE the user completely
+        db.run('DELETE FROM users WHERE id = ?', [update.id], function (err) {
+          if (err) return reject(err);
+          resolve();
+        });
+      } else {
+        // Assign role
+        db.run(
+          'INSERT OR IGNORE INTO user_roles (user_id, role_id) VALUES (?, ?)',
+          [update.id, roleId],
+          function (err) {
+            if (err) return reject(err);
+            resolve();
+          }
+        );
+      }
+    });
+  }));
+
+  Promise.all(tasks)
+    .then(() => res.json({ message: 'Resource statuses updated successfully' }))
+    .catch(err => {
+      console.error('Error updating resource statuses:', err);
+      res.status(500).json({ error: 'Failed to update resource statuses' });
+    });
+};

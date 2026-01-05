@@ -1,6 +1,6 @@
 const express = require('express');
 const { authenticate, authorize } = require('../middleware/auth.middleware');
-const { assignRole, getDashboardStats, getDashboardChart } = require('../controllers/admin.controller');
+const { assignRole, getDashboardStats, getDashboardChart, getPendingResources, updateResourceStatus } = require('../controllers/admin.controller');
 
 const router = express.Router();
 
@@ -25,4 +25,17 @@ router.get(
   getDashboardChart
 );
 
+router.get(
+  '/pending-resources',
+  // authenticate,
+  // authorize(['admin']),
+  getPendingResources
+);
+
+router.post(
+  '/resource-status',
+  // authenticate,
+  // authorize(['admin']),
+  updateResourceStatus
+);
 module.exports = router;
