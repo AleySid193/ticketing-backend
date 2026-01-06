@@ -14,77 +14,75 @@ exports.signup = async (req, res) => {
     return res.status(400).json({ error: 'Missing fields' });
   }
 
-  const hashed = await bcrypt.hash(password, 10);
+  try {
+    // Check if email already exists
+    db.get(`SELECT id FROM users WHERE email = ?`, [email], async (err, existingUser) => {
+      if (err) return res.status(500).json({ error: 'Database error' });
 
-  db.run(
-    `
-    INSERT INTO users (name, email, password)
-    VALUES (?, ?, ?)
-    `,
-    [name, email, hashed],
-    function (err) {
-      if (err) {
-        return res.status(400).json({ error: 'User already exists' });
+      if (existingUser) {
+        return res.status(409).json({ error: 'Email is already in use' });
       }
 
-      res.status(201).json({
-        message: 'User created. Await role assignment by admin.'
-      });
-    }
-  );
-};
+      // Hash password
+      const hashed = await bcrypt.hash(password, 10);
 
-/* =========================
-   LOGIN (FETCH ROLES)
-========================= */
-exports.login = (req, res) => {
-  const { email, password } = req.body;
+      // Insert new user
+      db.run(
+        `INSERT INTO users (name, email, password) VALUES (?, ?, ?)`,
+        [name, email, hashed],
+        function (err) {
+          if (err) {
+            return res.status(500).json({ error: 'Failed to create user' });
+          }
 
-  db.get(
-    `SELECT * FROM users WHERE email = ?`,
-    [email],
-    async (err, user) => {
-      if (!user) {
-        return res.status(401).json({ error: 'Invalid credentials' });
-      }
-
-      const valid = await bcrypt.compare(password, user.password);
-      if (!valid) {
-        return res.status(401).json({ error: 'Invalid credentials' });
-      }
-
-      // Fetch roles
-      db.all(
-        `
-        SELECT r.name
-        FROM roles r
-        JOIN user_roles ur ON ur.role_id = r.id
-        WHERE ur.user_id = ?
-        `,
-        [user.id],
-        (err, roles) => {
-          const roleNames = roles.map(r => r.name);
-
-          const token = jwt.sign(
-            {
-              id: user.id,
-              roles: roleNames
-            },
-            JWT_SECRET,
-            { expiresIn: '1d' }
-          );
-
-          res.json({
-            token,
-            user: {
-              id: user.id,
-              name: user.name,
-              email: user.email,
-              roles: roleNames
-            }
+          res.status(201).json({
+            message: 'User created. Await role assignment by admin.'
           });
         }
       );
-    }
-  );
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Unexpected error' });
+  }
 };
+
+
+/* =========================
+   LOGIN (FETCH SINGLE ROLE)
+========================= */
+exports.login = async (req, res) => {
+  const { email, password } = req.body;
+
+  db.get(`SELECT * FROM users WHERE email = ?`, [email], async (err, user) => {
+    if (err) return res.status(500).json({ error: 'Database error' });
+
+    if (!user) {
+      // Email not found
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const valid = await bcrypt.compare(password, user.password);
+    if (!valid) {
+      // Password incorrect
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+
+    // Login successful → generate JWT
+    const token = jwt.sign(
+      { id: user.id, role: user.role },
+      JWT_SECRET,
+      { expiresIn: '1d' }
+    );
+
+    res.json({
+      token,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+      },
+    });
+  });
+};
+
