@@ -1,27 +1,35 @@
 const express = require('express');
 const { authenticate, authorize } = require('../middleware/auth.middleware');
-const { assignRole, getDashboardStats, getDashboardChart, getPendingResources, updateResourceStatus } = require('../controllers/admin.controller');
+const { assignRole,
+  getDashboardStats, 
+  getDashboardChart, 
+  getPendingResources, 
+  updateResourceStatus,
+  assignUsersToManager,
+  getManagers,
+  getUsers,
+} = require('../controllers/admin.controller');
 
 const router = express.Router();
 
 router.post(
   '/assign-role',
-  authenticate,
-  authorize(['admin']),
+  // authenticate,
+  // authorize(['admin']),
   assignRole
 );
 
 router.get(
   '/dashboard-stats',
-  authenticate,
-  authorize(['admin']),
+  // authenticate,
+  // authorize(['admin']),
   getDashboardStats
 );
 
 router.get(
   '/dashboard-chart',
-  authenticate,
-  authorize(['admin']),
+  // authenticate,
+  // authorize(['admin']),
   getDashboardChart
 );
 
@@ -38,4 +46,22 @@ router.post(
   // authorize(['admin']),
   updateResourceStatus
 );
+
+
+router.post(
+  '/assign-users-to-manager',
+  assignUsersToManager
+);
+
+router.get(
+  '/get-managers',
+  getManagers
+);
+
+router.get(
+  '/get-users',
+  getUsers
+);
+
+
 module.exports = router;
