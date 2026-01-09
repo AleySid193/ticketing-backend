@@ -8,6 +8,7 @@ const { assignRole,
   assignUsersToManager,
   getManagers,
   getUsers,
+  getAllResources,
 } = require('../controllers/admin.controller');
 
 const router = express.Router();
@@ -61,6 +62,11 @@ router.get(
 router.get(
   '/get-users',
   getUsers
+);
+
+router.get(
+  '/get-all-resources',
+  getAllResources
 );
 
 

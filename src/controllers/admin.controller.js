@@ -231,3 +231,19 @@ exports.assignUsersToManager = (req, res) => {
       res.status(400).json({ error: err.message || 'Bulk assignment failed' });
     });
 };
+
+exports.getAllResources = (req, res) => {
+  const query = `
+    SELECT id, name, email, manager_id
+    FROM users
+  `;
+
+  db.all(query, [], (err, rows) => {
+    if (err) {
+      console.error('Error fetching resources:', err);
+      return res.status(500).json({ error: 'Failed to fetch resources' });
+    }
+
+    res.json(rows);
+  });
+};
