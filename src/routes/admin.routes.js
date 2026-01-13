@@ -9,6 +9,7 @@ const { assignRole,
   getManagers,
   getUsers,
   getAllResources,
+  updateResources,
 } = require('../controllers/admin.controller');
 
 const router = express.Router();
@@ -69,5 +70,9 @@ router.get(
   getAllResources
 );
 
+router.post(
+  '/update-resources',
+  updateResources
+);
 
 module.exports = router;

@@ -234,7 +234,7 @@ exports.assignUsersToManager = (req, res) => {
 
 exports.getAllResources = (req, res) => {
   const query = `
-    SELECT id, name, email, manager_id
+    SELECT id, name, role, email, manager_id
     FROM users
   `;
 
@@ -246,4 +246,63 @@ exports.getAllResources = (req, res) => {
 
     res.json(rows);
   });
+};
+
+exports.updateResources = (req, res) => {
+  const updates = req.body.resources;
+
+  if (!Array.isArray(updates) || updates.length === 0) {
+    return res.status(400).json({ error: 'Invalid payload' });
+  }
+
+  const allowedRoles = ['admin', 'manager', 'user'];
+
+  // Prepare all promises for batch execution
+  const tasks = updates.map(item => {
+    return new Promise((resolve, reject) => {
+      if (item.deleted) {
+        // Delete user
+        db.run('DELETE FROM users WHERE id = ?', [item.id], function (err) {
+          if (err) return reject(err);
+          if (this.changes === 0) return reject(new Error(`User with id ${item.id} not found`));
+          resolve({ id: item.id, action: 'deleted' });
+        });
+      } else if (item.role) {
+        // Update role
+        if (!allowedRoles.includes(item.role)) {
+          return reject(new Error(`Invalid role: ${item.role} for user id ${item.id}`));
+        }
+
+        db.run('UPDATE users SET role = ? WHERE id = ?', [item.role, item.id], function (err) {
+          if (err) return reject(err);
+          if (this.changes === 0) return reject(new Error(`User with id ${item.id} not found`));
+          resolve({ id: item.id, action: 'role_updated', newRole: item.role });
+        });
+      } else {
+        // No action for this item
+        resolve(null);
+      }
+    });
+  });
+
+  // Execute all updates
+  Promise.allSettled(tasks)
+    .then(results => {
+      const successes = results
+        .filter(r => r.status === 'fulfilled' && r.value !== null)
+        .map(r => r.value);
+      const errors = results
+        .filter(r => r.status === 'rejected')
+        .map(r => r.reason.message);
+
+      res.json({
+        message: 'Resource updates processed',
+        successes,
+        errors,
+      });
+    })
+    .catch(err => {
+      console.error('Error processing updates:', err);
+      res.status(500).json({ error: 'Failed to process updates' });
+    });
 };
