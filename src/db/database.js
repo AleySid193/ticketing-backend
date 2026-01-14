@@ -46,7 +46,7 @@ db.serialize(() => {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
 
       title TEXT NOT NULL,
-      description TEXT,
+      description TEXT NOT NULL,
 
       priority TEXT NOT NULL
         CHECK (priority IN ('low', 'medium', 'high')),
@@ -57,7 +57,8 @@ db.serialize(() => {
           'submitted',
           'approved',
           'rejected',
-          'completed'
+          'completed',
+          'created'
         )),
 
       assigned_to INTEGER,

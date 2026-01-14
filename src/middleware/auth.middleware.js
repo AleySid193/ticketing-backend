@@ -2,15 +2,19 @@ const jwt = require('jsonwebtoken');
 require('dotenv').config();
 const JWT_SECRET = process.env.JWT_SECRET;
 
+/* =========================
+   AUTHENTICATION
+========================= */
 exports.authenticate = (req, res, next) => {
-  const token = req.headers.authorization?.split(' ')[1];
-  if (!token) return res.sendStatus(401);
+  const token = req.headers.authorization?.split(' ')[1]; // Bearer <token>
+  if (!token) return res.sendStatus(401); // Unauthorized
 
   try {
-    req.user = jwt.verify(token, JWT_SECRET);
+    req.user = jwt.verify(token, JWT_SECRET); // payload should have { id, role }
     next();
-  } catch {
-    res.sendStatus(403);
+  } catch (err) {
+    console.error('JWT verification failed:', err);
+    res.sendStatus(403); // Forbidden
   }
 };
 
@@ -19,13 +23,11 @@ exports.authenticate = (req, res, next) => {
 ========================= */
 exports.authorize = (requiredRoles = []) => {
   return (req, res, next) => {
-    const userRoles = req.user.roles || [];
+    const userRole = req.user.role; // single role string
 
-    const allowed = requiredRoles.some(role =>
-      userRoles.includes(role)
-    );
-
-    if (!allowed) return res.sendStatus(403);
+    if (!requiredRoles.includes(userRole)) {
+      return res.sendStatus(403); // Forbidden
+    }
 
     next();
   };
