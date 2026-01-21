@@ -1,6 +1,6 @@
 const express = require('express');
 const { authenticate, authorize } = require('../middleware/auth.middleware');
-const { getDashboardStats, bulkCreateTasks, getViewTasks, updateViewTasks
+const { getDashboardStats, bulkCreateTasks, getViewTasks, updateViewTasks, getAssignTasks, updateAssignTasks
 } = require('../controllers/manager.controller');
 
 const router = express.Router();
@@ -30,7 +30,21 @@ router.post(
   '/update-view-tasks',
   authenticate,
   authorize(['manager']),
-  bulkCreateTasks
+  updateViewTasks
+);
+
+router.get(
+  '/get-assign-tasks',
+  authenticate,
+  authorize(['manager']),
+  getAssignTasks
+);
+
+router.post(
+  '/update-assign-tasks',
+  authenticate,
+  authorize(['manager']),
+  updateAssignTasks
 );
 
 module.exports = router;

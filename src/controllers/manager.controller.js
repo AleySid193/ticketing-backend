@@ -1,4 +1,5 @@
 const db = require('../db/database');
+const util = require('util');
 
 exports.getDashboardStats = (req, res) => {
   const managerId = req.user.id;
@@ -58,6 +59,29 @@ exports.getViewTasks = (req, res) => {
     if (err) return res.status(500).json({ error: err.message });
     res.json(rows);
   })
+};
+
+exports.getAssignTasks = async (req, res) => {
+  const managerId = req.user.id;
+  const dbAll = util.promisify(db.all).bind(db);
+
+  try {
+    const tasks = await dbAll(
+      `SELECT id, title, description, priority, points 
+       FROM tasks 
+       WHERE is_deleted = 0 AND created_by = ? AND status = "created"`,
+      managerId
+    );
+
+    const myResources = await dbAll(
+      `SELECT id, name FROM users WHERE manager_id = ?`,
+      managerId
+    );
+
+    res.json({ Tasks: tasks, myResources });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 };
 
 exports.updateViewTasks = (req, res) => {
@@ -164,5 +188,36 @@ exports.updateViewTasks = (req, res) => {
       res.status(400).json({
         error: err.message || 'Failed to update tasks',
       });
+    });
+};
+
+exports.updateAssignTasks = (req, res) => {
+  const updates = req.body;
+
+  if (!Array.isArray(updates)) {
+    return res.status(400).json({ error: 'Invalid payload format' });
+  }
+
+  const assignTasksPromises = updates.map(({ taskId, resourceId }) => {
+    return new Promise((resolve, reject) => {
+      db.run(
+        `
+        UPDATE tasks
+        SET assigned_to = ?, status = 'assigned'
+        WHERE id = ?
+        `,
+        [resourceId, taskId],
+        err => (err ? reject(err) : resolve())
+      );
+    });
+  });
+
+  Promise.all(assignTasksPromises)
+    .then(() =>
+      res.json({ message: 'Task assignments updated successfully' })
+    )
+    .catch(err => {
+      console.error('Error updating task assignments:', err);
+      res.status(500).json({ error: 'Failed to update task assignments' });
     });
 };
