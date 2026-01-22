@@ -2,7 +2,7 @@ const express = require('express');
 const cors = require('cors');
 
 const authRoutes = require('./routes/auth.routes');
-const taskRoutes = require('./routes/task.routes');
+const userRoutes = require('./routes/user.routes');
 const adminRoutes = require('./routes/admin.routes');
 const managerRoutes = require('./routes/manager.routes');
 
@@ -25,7 +25,7 @@ app.get('/health', (req, res) => {
 
 app.use('/auth', authRoutes);
 app.use('/manager', managerRoutes);
-app.use('/tasks', taskRoutes);
+app.use('/user', userRoutes);
 app.use('/admin', adminRoutes);
 
 app.use((err, req, res, next) => {
