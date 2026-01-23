@@ -65,3 +65,20 @@ exports.getManager = (req, res) => {
       res.json(data);
 });
 }
+
+exports.getAssignedTasks = (req, res) => {
+  const userId = req.user.id;
+  db.all(`SELECT id, title, description, priority, points FROM tasks WHERE (is_deleted = 0 AND assigned_to = ? AND (status = "assigned" OR status = "rejected"))`, 
+    userId, (err, rows) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(rows);
+  })
+};
+
+exports.submitAssignedTask = (req, res) => {
+  const { id } = req.body;
+  db.all(`UPDATE tasks SET status = "submitted" WHERE id = ?`, id, (err, rows) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.status(200);
+  })
+};

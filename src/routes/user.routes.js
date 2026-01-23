@@ -2,7 +2,9 @@ const express = require('express');
 const { authenticate, authorize } = require('../middleware/auth.middleware');
 const {
   getDashboard,
-  getManager
+  getManager,
+  getAssignedTasks,
+  submitAssignedTask
 } = require('../controllers/user.controller');
 
 const router = express.Router();
@@ -19,6 +21,20 @@ router.get(
   authenticate,
   authorize(['user']),
   getManager
+);
+
+router.get(
+  '/get-assigned-tasks',
+  authenticate,
+  authorize(['user']),
+  getAssignedTasks
+);
+
+router.post(
+  '/submit-assigned-task',
+  authenticate,
+  authorize(['user']),
+  submitAssignedTask
 );
 
 module.exports = router;
