@@ -82,3 +82,12 @@ exports.submitAssignedTask = (req, res) => {
     res.status(200);
   })
 };
+
+exports.getTasksStatus = (req, res) => {
+  const userId = req.user.id;
+  db.all(`SELECT id, title, description, points, status FROM tasks WHERE (is_deleted = 0 AND assigned_to = ? AND (status = "completed" OR status = "submitted"))`, 
+    userId, (err, rows) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(rows);
+  })
+};

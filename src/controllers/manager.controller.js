@@ -221,3 +221,21 @@ exports.updateAssignTasks = (req, res) => {
       res.status(500).json({ error: 'Failed to update task assignments' });
     });
 };
+
+exports.getReviewTasks = (req, res) => {
+  const managerId = req.user?.id;
+  db.all(`SELECT id, title, description, points, priority FROM tasks WHERE (is_deleted = 0 AND created_by = ? AND status = "submitted")`, 
+    managerId, (err, rows) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(rows);
+  })
+};
+
+exports.updateReviewTasks = (req, res) => {
+  const update = req.body;
+  db.all(`UPDATE tasks SET status = ? WHERE (is_deleted = 0 AND id = ?)`, 
+  update.status, update.id, (err) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.status(200).json({ message: 'Task status updated successfully' });
+  })
+};

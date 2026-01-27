@@ -4,7 +4,8 @@ const {
   getDashboard,
   getManager,
   getAssignedTasks,
-  submitAssignedTask
+  submitAssignedTask,
+  getTasksStatus
 } = require('../controllers/user.controller');
 
 const router = express.Router();
@@ -28,6 +29,13 @@ router.get(
   authenticate,
   authorize(['user']),
   getAssignedTasks
+);
+
+router.get(
+  '/get-tasks-status',
+  authenticate,
+  authorize(['user']),
+  getTasksStatus
 );
 
 router.post(
